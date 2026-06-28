@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HabitFlow</title>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0d0f;
+  --surface:#141416;
+  --surface2:#1c1c20;
+  --surface3:#242428;
+  --border:rgba(255,255,255,0.07);
+  --border2:rgba(255,255,255,0.12);
+  --text:#f2f2f0;
+  --text2:#a0a0a8;
+  --text3:#606068;
+  --accent:#7c6af7;
+  --accent2:rgba(124,106,247,0.18);
+  --green:#22c55e;
+  --green2:rgba(34,197,94,0.15);
+  --amber:#f59e0b;
+  --amber2:rgba(245,158,11,0.15);
+  --red:#ef4444;
+  --red2:rgba(239,68,68,0.15);
+  --cyan:#06b6d4;
+  --pink:#ec4899;
+  --r:12px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+.app{display:flex;min-height:100vh}
+
+/* SIDEBAR */
+.sidebar{width:200px;background:var(--surface);border-right:1px solid var(--border);padding:1.25rem 0.75rem;display:flex;flex-direction:column;position:fixed;height:100vh;top:0;left:0;z-index:100}
+.logo{display:flex;align-items:center;gap:9px;padding:0.5rem 0.75rem 1.5rem;color:var(--text);font-weight:700;font-size:16px}
+.logo-icon{width:30px;height:30px;background:linear-gradient(135deg,var(--accent),#a855f7);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px}
+.nav-section{font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;padding:0 0.75rem;margin:0.75rem 0 0.4rem}
+.nav-item{display:flex;align-items:center;gap:9px;padding:0.55rem 0.75rem;border-radius:8px;cursor:pointer;font-size:13px;color:var(--text2);transition:all .15s;border:none;background:none;width:100%;text-align:left}
+.nav-item:hover{background:rgba(255,255,255,0.05);color:var(--text)}
+.nav-item.active{background:var(--accent2);color:var(--accent);font-weight:500}
+.nav-item svg{width:15px;height:15px;flex-shrink:0;opacity:.8}
+.nav-item.active svg{opacity:1}
+.badge{font-size:9px;background:linear-gradient(135deg,var(--accent),#a855f7);color:#fff;border-radius:4px;padding:1px 5px;margin-left:auto;font-weight:600}
+.sidebar-footer{margin-top:auto;padding:0.75rem;font-size:11px;color:var(--text3);line-height:1.8}
+.online-dot{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;margin-right:5px}
+
+/* MAIN */
+.main{margin-left:200px;flex:1;padding:1.75rem 2rem;max-width:1200px}
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.5rem}
+.page-title{font-size:20px;font-weight:700;color:var(--text)}
+.page-title span{color:var(--accent)}
+.page-sub{color:var(--text3);font-size:12px;margin-top:3px}
+.date-badge{background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:6px 12px;font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px}
+
+/* STAT CARDS */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1.25rem}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.1rem 1.25rem;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent-line, var(--accent));opacity:.6}
+.stat-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:10px}
+.stat-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.stat-value{font-size:28px;font-weight:700;color:var(--text);line-height:1}
+.stat-sub{font-size:11px;color:var(--text3);margin-top:5px}
+.stat-delta{font-size:11px;margin-top:4px;font-weight:500}
+.up{color:var(--green)} .down{color:var(--red)} .neutral{color:var(--text3)}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.25rem;margin-bottom:12px}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.card-title{font-size:14px;font-weight:600;color:var(--text)}
+.card-hint{font-size:11px;color:var(--text3)}
+.card-select{background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:4px 10px;font-size:11px;color:var(--text2);cursor:pointer;outline:none}
+
+/* GRID LAYOUT */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px}
+
+/* DONUT */
+.donut-wrap{display:flex;align-items:center;gap:2rem}
+.donut-canvas{position:relative;width:130px;height:130px;flex-shrink:0}
+.donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.donut-pct{font-size:24px;font-weight:700;color:var(--text)}
+.donut-lbl{font-size:10px;color:var(--text3)}
+.legend-item{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12px;color:var(--text2)}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.legend-count{font-weight:600;color:var(--text);margin-left:auto;padding-left:12px}
+
+/* HEATMAP */
+.heatmap-grid{display:grid;grid-template-columns:30px repeat(29,1fr);gap:3px}
+.heatmap-label{font-size:9px;color:var(--text3);display:flex;align-items:center}
+.heatmap-cell{aspect-ratio:1;border-radius:3px;background:var(--surface2)}
+.h0{background:var(--surface2)}
+.h1{background:rgba(34,197,94,.2)}
+.h2{background:rgba(34,197,94,.45)}
+.h3{background:rgba(34,197,94,.7)}
+.h4{background:rgba(34,197,94,.95)}
+.h-miss{background:rgba(245,158,11,.5)}
+.hm-legend{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text3);margin-top:8px}
+.hm-swatch{width:10px;height:10px;border-radius:2px}
+
+/* HABIT PERFORMANCE BARS */
+.perf-item{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.perf-icon{width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.perf-name{width:110px;font-size:12px;color:var(--text2);flex-shrink:0}
+.perf-bar-wrap{flex:1;height:7px;background:var(--surface2);border-radius:4px;overflow:hidden}
+.perf-bar{height:100%;background:var(--green);border-radius:4px}
+.perf-pct{width:36px;text-align:right;font-size:12px;color:var(--text);font-weight:600}
+
+/* HISTORY TABLE */
+.hist-table{width:100%;border-collapse:collapse;font-size:12px}
+.hist-table th{text-align:left;padding:7px 10px;color:var(--text3);border-bottom:1px solid var(--border);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+.hist-table td{padding:6px 10px;border-bottom:1px solid var(--border);color:var(--text2)}
+.hist-table tr:last-child td{border-bottom:none}
+.hist-table tr:hover td{background:rgba(255,255,255,.02)}
+.cell-check{color:var(--green);font-size:14px;display:flex;justify-content:center}
+.cell-x{color:var(--red);font-size:14px;display:flex;justify-content:center}
+.cell-skip{color:var(--text3)}
+.score-pill{display:inline-flex;align-items:center;justify-content:center;width:42px;font-weight:600;padding:2px 0;border-radius:20px;font-size:11px}
+.score-high{background:var(--green2);color:var(--green)}
+.score-med{background:var(--amber2);color:var(--amber)}
+.score-low{background:var(--red2);color:var(--red)}
+
+/* WEEKLY SUMMARY */
+.week-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:12px}
+.week-label{width:90px;color:var(--text3);flex-shrink:0}
+.week-dates{width:80px;color:var(--text3);font-size:10px;flex-shrink:0}
+.week-bar-wrap{flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.week-bar{height:100%;background:var(--green);border-radius:3px}
+.week-pct{width:36px;text-align:right;font-weight:600;color:var(--text)}
+
+/* BEST WORST */
+.bw-card{background:var(--surface2);border-radius:10px;padding:1rem;flex:1}
+.bw-icon-wrap{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:8px}
+.bw-tag{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.bw-name{font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px}
+.bw-pct{font-size:22px;font-weight:700}
+.bw-sub{font-size:10px;color:var(--text3)}
+
+/* MOOD DONUT */
+.mood-wrap{display:flex;align-items:center;gap:1.5rem}
+.mood-legend{display:flex;flex-direction:column;gap:8px}
+.mood-item{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2)}
+.mood-face{font-size:14px}
+.mood-pct{font-weight:600;color:var(--text);margin-left:auto}
+
+/* AI INSIGHTS */
+.insight-item{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text2);margin-bottom:8px;line-height:1.5}
+.insight-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);margin-top:5px;flex-shrink:0}
+
+/* MONTHLY CAL */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-day-hdr{text-align:center;font-size:10px;color:var(--text3);padding-bottom:4px;font-weight:500}
+.cal-day{aspect-ratio:1;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;color:var(--text2);position:relative;cursor:default}
+.cal-day.today{border:1px solid var(--accent)}
+.cal-day.has-done .cal-num{font-weight:600;color:var(--text)}
+.cal-day .cal-num{line-height:1}
+.cal-check{font-size:10px;margin-top:1px}
+
+/* YEARLY CHART */
+.chart-wrap{position:relative;height:140px}
+
+/* BUTTONS */
+.btn{padding:.5rem .9rem;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{opacity:.85}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.btn-ghost{background:var(--surface2);color:var(--text2);border:1px solid var(--border2)}
+.btn-ghost:hover{background:var(--surface3);color:var(--text)}
+.btn-ghost:disabled{opacity:.4;cursor:not-allowed}
+.btn-danger{background:var(--red2);color:var(--red);border:1px solid rgba(239,68,68,.2)}
+.btn-danger:hover{background:rgba(239,68,68,.25)}
+.btn-sm{padding:.3rem .6rem;font-size:11px}
+
+/* ADD HABIT */
+.add-form{display:flex;gap:8px;margin-bottom:.75rem}
+.add-form input{flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:.55rem .85rem;color:var(--text);font-size:13px;outline:none}
+.add-form input:focus{border-color:var(--accent)}
+.add-form input::placeholder{color:var(--text3)}
+.color-row{display:flex;gap:6px;margin-bottom:10px}
+.color-dot{width:16px;height:16px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .1s}
+.color-dot.sel{border-color:#fff;transform:scale(1.2)}
+
+/* HABIT LIST */
+.habit-row{display:flex;align-items:center;gap:10px;padding:.6rem 0;border-bottom:1px solid var(--border)}
+.habit-row:last-child{border-bottom:none}
+.check-btn{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border2);background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+.check-btn.on{background:var(--green);border-color:var(--green)}
+.check-btn svg{width:12px;height:12px;stroke:#fff}
+.streak-tag{font-size:10px;background:var(--amber2);color:var(--amber);border:1px solid rgba(245,158,11,.2);border-radius:20px;padding:2px 7px;font-weight:500}
+
+/* TOAST */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:.75rem 1.25rem;font-size:13px;color:var(--text);z-index:999;animation:slideUp .25s ease}
+@keyframes slideUp{from{transform:translateY(8px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* SPINNER */
+.spinner{width:14px;height:14px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ERROR */
+.err{background:var(--red2);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:.65rem 1rem;font-size:12px;color:var(--red);margin-bottom:1rem}
+
+/* EXPORT */
+.range-presets{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1rem}
+.preset-btn{background:var(--surface2);border:1px solid var(--border2);border-radius:20px;padding:4px 14px;font-size:12px;color:var(--text2);cursor:pointer;transition:all .15s}
+.preset-btn:hover,.preset-btn.act{background:var(--accent2);border-color:var(--accent);color:var(--accent)}
+.exp-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem}
+.exp-grid label{font-size:12px;color:var(--text2);display:block;margin-bottom:5px}
+.exp-grid input[type=date]{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:.5rem .85rem;color:var(--text);font-size:13px;outline:none}
+.exp-grid input[type=date]:focus{border-color:var(--accent)}
+.preview-scroll{max-height:280px;overflow-y:auto}
+.preview-table{width:100%;border-collapse:collapse;font-size:12px}
+.preview-table th{text-align:left;padding:7px 10px;color:var(--text3);border-bottom:1px solid var(--border);font-weight:500;font-size:11px;text-transform:uppercase}
+.preview-table td{padding:6px 10px;border-bottom:1px solid var(--border);color:var(--text2)}
+.preview-table .ok{color:var(--green);font-weight:600}
+.preview-table tr:last-child td{border-bottom:none}
+
+/* EMPTY */
+.empty{text-align:center;padding:2rem;color:var(--text3);font-size:13px}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .sidebar{display:none}.main{margin-left:0;padding:1rem}
+  .stats-row,.two-col,.three-col{grid-template-columns:1fr 1fr}
+}
+@media(max-width:600px){
+  .stats-row,.two-col,.three-col{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+const DAYS = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+const MONTHS_FULL = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+const COLORS = ['#7c6af7','#22c55e','#f59e0b','#ef4444','#06b6d4','#ec4899','#f97316'];
+const HABIT_ICONS = ['📖','🏋️','💻','🧘','💧','🌙','🚫','📝','🎯','⚡'];
+const todayStr = () => new Date().toISOString().slice(0,10);
+
+const BASE = '/api';
+const api = {
+  getHabits: () => fetch(`${BASE}/habits`).then(r=>r.json()),
+  addHabit: (name,color) => fetch(`${BASE}/habits`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,color})}).then(r=>r.json()),
+  deleteHabit: id => fetch(`${BASE}/habits/${id}`,{method:'DELETE'}).then(r=>r.json()),
+  getLogs: (from,to) => fetch(`${BASE}/logs?from=${from}&to=${to}`).then(r=>r.json()),
+  toggleLog: (habit_id,date) => fetch(`${BASE}/logs/toggle`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({habit_id,date})}).then(r=>r.json()),
+  getMonthlyStats: (y,m) => fetch(`${BASE}/stats/monthly?year=${y}&month=${m}`).then(r=>r.json()),
+  getExportUrl: (from,to) => `${BASE}/export?from=${from}&to=${to}`,
+};
+
+// Icons
+const Ico = ({d,size=16}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d}/></svg>;
+const IcoCheck = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>;
+const IcoTrash = () => <Ico d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>;
+const IcoPlus = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
+const IcoHome = () => <Ico d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>;
+const IcoDaily = () => <Ico d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>;
+const IcoWeekly = () => <Ico d="M3 3h18v18H3zM3 9h18M3 15h18M9 3v18M15 3v18"/>;
+const IcoBar = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="4" width="4" height="17" rx="1"/></svg>;
+const IcoCal = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
+const IcoInsights = () => <Ico d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>;
+const IcoHistory = () => <Ico d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>;
+const IcoSettings = () => <Ico d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>;
+const IcoDl = () => <Ico d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>;
+
+// === LineChart ===
+function LineChart({ data, labels, color='#7c6af7', height=160 }) {
+  const ref = useRef(); const ch = useRef();
+  useEffect(() => {
+    if (ch.current) ch.current.destroy();
+    ch.current = new Chart(ref.current, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          data,
+          borderColor: color,
+          backgroundColor: color.includes('#') ? color + '22' : color,
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: color,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color:'#606068', font:{size:10} } },
+          y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color:'#606068', font:{size:10}, callback: v=>`${v}%` }, min:0, max:100 },
+        },
+      }
+    });
+    return () => ch.current?.destroy();
+  }, [JSON.stringify(data)]);
+  return <div style={{position:'relative',height}}><canvas ref={ref}/></div>;
+}
+
+// === YearlyLineChart ===
+function YearlyChart({ data, labels }) {
+  const ref = useRef(); const ch = useRef();
+  useEffect(() => {
+    if (ch.current) ch.current.destroy();
+    ch.current = new Chart(ref.current, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          data,
+          borderColor: '#a855f7',
+          backgroundColor: 'rgba(168,85,247,0.15)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: '#a855f7',
+          pointRadius: 3,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color:'#606068', font:{size:10} } },
+          y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color:'#606068', font:{size:10}, callback: v=>`${v}%` }, min:0, max:100 },
+        },
+      }
+    });
+    return () => ch.current?.destroy();
+  }, [JSON.stringify(data)]);
+  return <div style={{position:'relative',height:140}}><canvas ref={ref}/></div>;
+}
+
+// === DonutChart ===
+function DonutChart({ pct, completed, missed, remaining }) {
+  const ref = useRef(); const ch = useRef();
+  useEffect(() => {
+    if (ch.current) ch.current.destroy();
+    ch.current = new Chart(ref.current, {
+      type: 'doughnut',
+      data: {
+        datasets: [{
+          data: [completed, missed, remaining],
+          backgroundColor: ['#22c55e','#ef4444','rgba(255,255,255,0.08)'],
+          borderWidth: 0,
+          spacing: 2,
+        }]
+      },
+      options: {
+        cutout: '72%',
+        plugins: { legend: { display: false } },
+        animation: { duration: 600 },
+      }
+    });
+    return () => ch.current?.destroy();
+  }, [completed, missed, remaining]);
+  return (
+    <div className="donut-canvas">
+      <canvas ref={ref}/>
+      <div className="donut-center">
+        <div className="donut-pct">{pct}%</div>
+        <div className="donut-lbl">Selesai</div>
+      </div>
+    </div>
+  );
+}
+
+// === MoodDonut ===
+function MoodDonut({ good, neutral, bad }) {
+  const ref = useRef(); const ch = useRef();
+  useEffect(() => {
+    if (ch.current) ch.current.destroy();
+    ch.current = new Chart(ref.current, {
+      type: 'doughnut',
+      data: {
+        datasets: [{
+          data: [good, neutral, bad],
+          backgroundColor: ['#22c55e','#f59e0b','#ef4444'],
+          borderWidth: 0,
+          spacing: 2,
+        }]
+      },
+      options: {
+        cutout: '65%',
+        plugins: { legend: { display: false } },
+        animation: { duration: 400 },
+      }
+    });
+    return () => ch.current?.destroy();
+  }, [good, neutral, bad]);
+  return <div style={{width:90,height:90,position:'relative',flexShrink:0}}><canvas ref={ref}/></div>;
+}
+
+// === Activity Heatmap ===
+function ActivityHeatmap({ logs, totalHabits, days=29 }) {
+  const today = new Date();
+  const cells = {};
+  for (let r=0;r<7;r++) {
+    cells[r] = [];
+    for (let c=0;c<days;c++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - (days - 1 - c) - (6 - r));
+      const key = d.toISOString().slice(0,10);
+      const cnt = (logs[key]||[]).length;
+      const pct = totalHabits > 0 ? cnt/totalHabits : 0;
+      const lvl = pct===0 ? 0 : pct<.25 ? 1 : pct<.5 ? 2 : pct<.75 ? 3 : 4;
+      cells[r].push({ key, lvl, cnt, d });
+    }
+  }
+  return (
+    <div>
+      <div style={{display:'grid',gridTemplateColumns:`28px repeat(${days},1fr)`,gap:3}}>
+        {DAYS.map((day,r) => (
+          <>
+            <div key={'lbl'+r} style={{display:'flex',alignItems:'center',fontSize:9,color:'var(--text3)'}}>{day}</div>
+            {cells[r].map(({key,lvl,cnt}) => (
+              <div key={key} className={`heatmap-cell h${lvl}`} title={`${key}: ${cnt} habit`}/>
+            ))}
+          </>
+        ))}
+      </div>
+      <div style={{display:'flex',alignItems:'center',gap:6,marginTop:10,justifyContent:'space-between'}}>
+        <div className="hm-legend">
+          <span>Sedikit</span>
+          {[0,1,2,3,4].map(l=><div key={l} className={`hm-swatch h${l}`}/>)}
+          <span>Banyak</span>
+        </div>
+        <div className="hm-legend"><div className="hm-swatch h-miss"/><span>Terlewat</span></div>
+      </div>
+    </div>
+  );
+}
+
+// === Monthly Calendar ===
+function MonthCalendar({ logs, habits, year, month }) {
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const today = new Date();
+  const todayKey = todayStr();
+
+  const cells = [];
+  for (let i=0;i<firstDay;i++) cells.push(null);
+  for (let d=1;d<=daysInMonth;d++) cells.push(d);
+
+  const getKey = d => `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+
+  return (
+    <div>
+      <div className="cal-grid">
+        {['Min','Sen','Sel','Rab','Kam','Jum','Sab'].map(d=><div key={d} className="cal-day-hdr">{d}</div>)}
+        {cells.map((d,i) => {
+          if (!d) return <div key={'e'+i}/>;
+          const key = getKey(d);
+          const done = (logs[key]||[]).length;
+          const isToday = key === todayKey;
+          const pct = habits.length>0 ? done/habits.length : 0;
+          const bg = pct===0 ? 'transparent' : pct<.5 ? 'rgba(34,197,94,.1)' : pct<1 ? 'rgba(34,197,94,.25)' : 'rgba(34,197,94,.4)';
+          return (
+            <div key={d} className={`cal-day${isToday?' today':''}${done>0?' has-done':''}`}
+              style={{background:bg}}>
+              <div className="cal-num">{d}</div>
+              {done>0 && <div className="cal-check" style={{color:'var(--green)',fontSize:9}}>✓</div>}
+              {done===0 && key<todayKey && <div style={{fontSize:9,color:'var(--text3)'}}>·</div>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// === Export Page ===
+function ExportPage({ habits, logs }) {
+  const today = todayStr();
+  const mo = (n) => { const d=new Date(); d.setMonth(d.getMonth()-n); return d.toISOString().slice(0,10); };
+  const [from,setFrom] = useState(mo(1));
+  const [to,setTo] = useState(today);
+  const [preset,setPreset] = useState('1bln');
+  const [dlCsv,setDlCsv] = useState(false);
+  const [dlPdf,setDlPdf] = useState(false);
+
+  const presets = [
+    {label:'7 Hari',key:'7h',fn:()=>mo(0).replace(/\d{2}$/,'')+String(new Date().getDate()-7).padStart(2,'0')},
+    {label:'1 Bulan',key:'1bln',from:mo(1)},
+    {label:'3 Bulan',key:'3bln',from:mo(3)},
+    {label:'6 Bulan',key:'6bln',from:mo(6)},
+    {label:'Kustom',key:'custom',from:null},
+  ];
+
+  const allDates = [];
+  const c=new Date(from),e=new Date(to);
+  while(c<=e){allDates.push(c.toISOString().slice(0,10));c.setDate(c.getDate()+1);}
+
+  const totalDays = allDates.length;
+  const activeDays = allDates.filter(d=>(logs[d]||[]).length>0).length;
+  const totalChecks = allDates.reduce((s,d)=>s+(logs[d]||[]).length,0);
+  const maxPossible = totalDays*habits.length;
+  const rateOverall = maxPossible>0?Math.round((totalChecks/maxPossible)*100):0;
+  const longestStreak = (() => {let b=0,cu=0;for(const d of allDates){(logs[d]||[]).length>0?(cu++,b=Math.max(b,cu)):cu=0;}return b;})();
+
+  const habitStats = habits.map(h=>{
+    const done=allDates.filter(d=>(logs[d]||[]).includes(h.id)).length;
+    const rate=totalDays>0?Math.round((done/totalDays)*100):0;
+    let s=0,ms=0;
+    for(const d of allDates){(logs[d]||[]).includes(h.id)?(s++,ms=Math.max(ms,s)):s=0;}
+    return{...h,done,rate,maxStreak:ms};
+  }).sort((a,b)=>b.rate-a.rate);
+
+  const handleCsv = async () => {
+    setDlCsv(true);
+    try{const a=document.createElement('a');a.href=api.getExportUrl(from,to);a.download=`habitflow_${from}_${to}.csv`;document.body.appendChild(a);a.click();document.body.removeChild(a);}
+    finally{setTimeout(()=>setDlCsv(false),1000);}
+  };
+
+  const handlePdf = async () => {
+    setDlPdf(true);
+    try {
+      const {jsPDF}=window.jspdf;
+      const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+      const W=210,mg=18;let y=mg;
+      const txt=(t,x,yy,o={})=>doc.text(String(t),x,yy,o);
+      doc.setFillColor(13,13,15);doc.rect(0,0,W,30,'F');
+      doc.setTextColor(242,242,240);doc.setFontSize(18);doc.setFont('helvetica','bold');
+      txt('HabitFlow',mg,13);
+      doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(160,160,168);
+      txt(`Laporan ${from} – ${to}`,mg,20);
+      txt(`Dicetak: ${new Date().toLocaleDateString('id-ID')}`,W-mg,20,{align:'right'});
+      y=40;
+      doc.setTextColor(15,15,16);doc.setFontSize(11);doc.setFont('helvetica','bold');
+      txt('Ringkasan',mg,y);y+=7;
+      const cards=[['Hari Aktif',`${activeDays}/${totalDays}`],['Total Check',totalChecks],['Kepatuhan',`${rateOverall}%`],['Streak Max',`${longestStreak}h`]];
+      cards.forEach(([l,v],i)=>{
+        const cx=mg+i*47;
+        doc.setFillColor(242,241,235);doc.setDrawColor(220,219,213);doc.setLineWidth(.3);
+        doc.roundedRect(cx,y,43,18,2,2,'FD');
+        doc.setTextColor(130,130,138);doc.setFontSize(7);doc.setFont('helvetica','normal');txt(l,cx+21.5,y+6,{align:'center'});
+        doc.setTextColor(15,15,16);doc.setFontSize(12);doc.setFont('helvetica','bold');txt(String(v),cx+21.5,y+14,{align:'center'});
+      });
+      y+=26;
+      doc.setTextColor(15,15,16);doc.setFontSize(11);doc.setFont('helvetica','bold');txt('Per Habit',mg,y);y+=6;
+      habitStats.forEach((h,i)=>{
+        if(y>275){doc.addPage();y=mg;}
+        if(i%2===0){doc.setFillColor(248,248,248);doc.rect(mg,y,W-mg*2,7,'F');}
+        const hex=h.color||'#7c6af7';
+        const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+        doc.setFillColor(r,g,b);doc.circle(mg+3,y+3.5,1.5,'F');
+        doc.setTextColor(15,15,16);doc.setFontSize(8);doc.setFont('helvetica','normal');
+        txt(h.name.slice(0,30),mg+7,y+5);
+        doc.setFillColor(235,234,250);doc.rect(120,y+1.5,40,4,'F');
+        doc.setFillColor(r,g,b);doc.rect(120,y+1.5,40*(h.rate/100),4,'F');
+        txt(`${h.rate}%`,162,y+5);
+        y+=7;
+      });
+      doc.save(`habitflow_${from}_${to}.pdf`);
+    } catch(e){alert('Error: '+e.message);}
+    finally{setDlPdf(false);}
+  };
+
+  return (
+    <>
+      <div className="page-header">
+        <div><div className="page-title">Export <span>& Laporan</span></div><div className="page-sub">Download data sebagai CSV atau laporan PDF</div></div>
+      </div>
+      <div className="card">
+        <div className="card-head"><span className="card-title">Rentang Waktu</span></div>
+        <div className="range-presets">
+          {presets.map(p=>(
+            <span key={p.key} className={`preset-btn${preset===p.key?' act':''}`}
+              onClick={()=>{if(p.from){setFrom(p.from);setTo(today);}setPreset(p.key);}}>
+              {p.label}
+            </span>
+          ))}
+        </div>
+        <div className="exp-grid">
+          <div><label>Dari</label><input type="date" value={from} max={to} onChange={e=>{setFrom(e.target.value);setPreset('custom');}}/></div>
+          <div><label>Sampai</label><input type="date" value={to} min={from} max={today} onChange={e=>{setTo(e.target.value);setPreset('custom');}}/></div>
+        </div>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:8}}>
+          <div style={{fontSize:12,color:'var(--text3)'}}>
+            <span style={{color:'var(--text)'}}>{totalDays}</span> hari · <span style={{color:'var(--green)'}}>{totalChecks}</span> check · <span style={{color:'var(--accent)'}}>{rateOverall}%</span> kepatuhan
+          </div>
+          <div style={{display:'flex',gap:8}}>
+            <button className="btn btn-ghost" onClick={handleCsv} disabled={dlCsv||from>to}><IcoDl/>{dlCsv?'..':'CSV'}</button>
+            <button className="btn btn-primary" onClick={handlePdf} disabled={dlPdf||from>to||!habits.length}><IcoDl/>{dlPdf?'..':'PDF'}</button>
+          </div>
+        </div>
+      </div>
+      <div className="card">
+        <div className="card-head"><span className="card-title">Kepatuhan per Habit</span></div>
+        {habitStats.map(h=>(
+          <div key={h.id} style={{marginBottom:12}}>
+            <div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:4}}>
+              <span style={{color:'var(--text)',display:'flex',alignItems:'center',gap:6}}>
+                <span style={{width:7,height:7,borderRadius:'50%',background:h.color,display:'inline-block'}}/>
+                {h.name}
+              </span>
+              <span style={{color:h.rate>70?'var(--green)':h.rate>40?'var(--amber)':'var(--red)',fontWeight:600}}>{h.rate}%</span>
+            </div>
+            <div style={{height:6,background:'var(--surface2)',borderRadius:3,overflow:'hidden'}}>
+              <div style={{height:'100%',width:`${h.rate}%`,background:h.color,borderRadius:3}}/>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="card">
+        <div className="card-head"><span className="card-title">Preview</span><span className="card-hint">5 hari pertama</span></div>
+        {habits.length===0?<div className="empty">Belum ada habit</div>:(
+          <div className="preview-scroll">
+            <table className="preview-table">
+              <thead><tr><th>Tanggal</th>{habits.map(h=><th key={h.id}>{h.name}</th>)}</tr></thead>
+              <tbody>
+                {allDates.slice(0,5).map(d=>(
+                  <tr key={d}><td>{d}</td>{habits.map(h=><td key={h.id} className={(logs[d]||[]).includes(h.id)?'ok':''}>{(logs[d]||[]).includes(h.id)?'✓':'–'}</td>)}</tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+// === APP ===
+function App() {
+  const [page,setPage] = useState('overview');
+  const [habits,setHabits] = useState([]);
+  const [logs,setLogs] = useState({});
+  const [input,setInput] = useState('');
+  const [color,setColor] = useState(COLORS[0]);
+  const [toast,setToast] = useState(null);
+  const [loading,setLoading] = useState(true);
+  const [saving,setSaving] = useState(false);
+  const [error,setError] = useState(null);
+  const [viewMonth,setViewMonth] = useState(new Date());
+  const [monthStats,setMonthStats] = useState({thisMonth:[0,0,0,0],lastMonth:[0,0,0,0],labels:['W1','W2','W3','W4']});
+
+  const today = todayStr();
+  const logsFrom = (() => { const d=new Date(); d.setFullYear(d.getFullYear()-1); return d.toISOString().slice(0,10); })();
+
+  useEffect(()=>{
+    Promise.all([api.getHabits(),api.getLogs(logsFrom,today)])
+      .then(([h,l])=>{ setHabits(h.data||[]); setLogs(l.data||{}); })
+      .catch(e=>setError(e.message))
+      .finally(()=>setLoading(false));
+  },[]);
+
+  useEffect(()=>{
+    if(page!=='stats'&&page!=='overview') return;
+    api.getMonthlyStats(viewMonth.getFullYear(),viewMonth.getMonth()+1)
+      .then(d=>setMonthStats(d)).catch(()=>{});
+  },[page,viewMonth]);
+
+  const showToast = msg => { setToast(msg); setTimeout(()=>setToast(null),2200); };
+
+  const addHabit = async () => {
+    const name=input.trim(); if(!name) return;
+    setSaving(true);
+    try{ const r=await api.addHabit(name,color); if(r.data){setHabits(h=>[...h,r.data]);setInput('');showToast('Habit ditambahkan ✓');} }
+    catch(e){setError(e.message);}
+    finally{setSaving(false);}
+  };
+
+  const toggleToday = async id => {
+    setLogs(prev=>{
+      const arr=[...(prev[today]||[])];
+      return{...prev,[today]:arr.includes(id)?arr.filter(x=>x!==id):[...arr,id]};
+    });
+    try{await api.toggleLog(id,today);}catch{}
+  };
+
+  const deleteHabit = async id => {
+    if(!confirm('Hapus habit ini?')) return;
+    setHabits(h=>h.filter(x=>x.id!==id));
+    await api.deleteHabit(id);
+    showToast('Habit dihapus');
+  };
+
+  const getStreak = id => {
+    let c=0; const d=new Date();
+    while(true){
+      const key=d.toISOString().slice(0,10);
+      if(!(logs[key]||[]).includes(id)) break;
+      c++; d.setDate(d.getDate()-1);
+    }
+    return c;
+  };
+
+  // === Computed stats ===
+  const todayLogs = logs[today]||[];
+  const doneToday = todayLogs.length;
+  const totalHabits = habits.length;
+  const pctToday = totalHabits>0?Math.round((doneToday/totalHabits)*100):0;
+  const bestStreak = habits.reduce((m,h)=>Math.max(m,getStreak(h.id)),0);
+
+  const thisMonthDays = (() => {
+    const now=new Date(); const days=[];
+    for(let i=1;i<=now.getDate();i++){
+      const key=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+      days.push(key);
+    }
+    return days;
+  })();
+
+  const activeDaysThisMonth = thisMonthDays.filter(d=>(logs[d]||[]).length>0).length;
+  const totalChecksMonth = thisMonthDays.reduce((s,d)=>s+(logs[d]||[]).length,0);
+  const completionRate = thisMonthDays.length>0&&totalHabits>0
+    ? Math.round((totalChecksMonth/(thisMonthDays.length*totalHabits))*100) : 0;
+
+  // Best day of week
+  const dayScores = Array(7).fill(0); const dayCounts = Array(7).fill(0);
+  Object.entries(logs).forEach(([key,ids])=>{
+    const dow=new Date(key+'T00:00').getDay();
+    dayScores[dow]+=(ids||[]).length; dayCounts[dow]++;
+  });
+  const dayAvgs = dayScores.map((s,i)=>dayCounts[i]>0?s/dayCounts[i]:0);
+  const bestDayIdx = dayAvgs.indexOf(Math.max(...dayAvgs));
+  const DAYS_FULL = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+  const bestDayName = bestDayIdx>=0&&dayAvgs[bestDayIdx]>0 ? DAYS_FULL[bestDayIdx] : '–';
+  const bestDayPct = totalHabits>0?Math.round(dayAvgs[bestDayIdx]/totalHabits*100):0;
+
+  // Completion trend (last 30 days)
+  const trendDays = 30;
+  const trendData = []; const trendLabels = [];
+  for(let i=trendDays-1;i>=0;i--) {
+    const d=new Date(); d.setDate(d.getDate()-i);
+    const key=d.toISOString().slice(0,10);
+    const cnt=(logs[key]||[]).length;
+    trendData.push(totalHabits>0?Math.round((cnt/totalHabits)*100):0);
+    if(i%5===0||i===0) trendLabels.push(`${MONTHS[d.getMonth()]} ${d.getDate()}`);
+    else trendLabels.push('');
+  }
+
+  // Habit performance this month
+  const habitPerf = habits.map(h=>{
+    const done=thisMonthDays.filter(d=>(logs[d]||[]).includes(h.id)).length;
+    return{...h, pct:thisMonthDays.length>0?Math.round((done/thisMonthDays.length)*100):0, done};
+  }).sort((a,b)=>b.pct-a.pct);
+
+  const bestHabit = habitPerf[0];
+  const worstHabit = habitPerf[habitPerf.length-1];
+
+  // Last 30 days table
+  const histDays = [];
+  for(let i=0;i<30;i++){const d=new Date();d.setDate(d.getDate()-i);histDays.push(d.toISOString().slice(0,10));}
+
+  // Weekly summary
+  const weeks = [
+    {label:'Minggu 1',from:30,to:24},
+    {label:'Minggu 2',from:23,to:17},
+    {label:'Minggu 3',from:16,to:10},
+    {label:'Minggu 4',from:9,to:3},
+    {label:'Minggu 5',from:2,to:0},
+  ].map(w=>{
+    const days=[];
+    for(let i=w.from;i>=w.to;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(d.toISOString().slice(0,10));}
+    const checks=days.reduce((s,d)=>s+(logs[d]||[]).length,0);
+    const max=days.length*totalHabits;
+    const pct=max>0?Math.round((checks/max)*100):0;
+    const s0=days[0],s1=days[days.length-1];
+    const fmt=d=>new Date(d+'T00:00').toLocaleDateString('id-ID',{day:'numeric',month:'short'});
+    return{...w,pct,dateRange:`${fmt(s0)}–${fmt(s1)}`};
+  });
+
+  // Mood correlation (simulated based on completion)
+  const moodGood = Math.min(100, Math.round(completionRate * 0.7));
+  const moodNeutral = Math.min(100-moodGood, 30);
+  const moodBad = 100-moodGood-moodNeutral;
+
+  // Yearly overview
+  const yearlyData = MONTHS.map((_,m)=>{
+    const now=new Date(); const year=now.getFullYear();
+    const days=[]; const firstD=new Date(year,m,1); const lastD=new Date(year,m+1,0);
+    for(let d=new Date(firstD);d<=lastD;d.setDate(d.getDate()+1)){
+      if(d>now) break;
+      days.push(d.toISOString().slice(0,10));
+    }
+    if(!days.length) return null;
+    const checks=days.reduce((s,d)=>s+(logs[d]||[]).length,0);
+    const max=days.length*totalHabits;
+    return max>0?Math.round((checks/max)*100):0;
+  });
+  const yearlyFilled = yearlyData.map((v,i)=>v===null?(i>new Date().getMonth()?null:0):v);
+  const yearlyDisplay = yearlyFilled.map(v=>v===null?0:v);
+
+  // AI insights
+  const insights = [
+    bestDayName!=='–' ? `Kamu paling produktif di hari ${bestDayName}.` : 'Mulai lacak kebiasaanmu untuk insight AI.',
+    completionRate>0 ? `Completion rate bulan ini ${completionRate}%.` : 'Tambahkan habit dan mulai tracking!',
+    worstHabit && worstHabit.pct<70 ? `"${worstHabit.name}" perlu perhatian lebih (${worstHabit.pct}%).` : 'Semua habit berjalan baik! 🎉',
+    `${activeDaysThisMonth} dari ${new Date().getDate()} hari aktif bulan ini.`,
+  ];
+
+  if(loading) return (
+    <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',flexDirection:'column',gap:12}}>
+      <div className="spinner" style={{width:28,height:28}}/>
+      <span style={{color:'var(--text3)',fontSize:13}}>Memuat HabitFlow…</span>
+    </div>
+  );
+
+  const nav = [
+    {id:'overview',label:'Overview',Icon:IcoHome},
+    {id:'daily',label:'Daily',Icon:IcoDaily},
+    {id:'weekly',label:'Weekly',Icon:IcoWeekly},
+    {id:'stats',label:'Statistik',Icon:IcoBar,badge:'NEW'},
+    {id:'history',label:'History',Icon:IcoHistory},
+    {id:'export',label:'Export',Icon:IcoDl},
+  ];
+
+  const now = new Date();
+  const dateRange = `${now.toLocaleDateString('id-ID',{day:'numeric',month:'short'})} – Hari ini`;
+
+  return (
+    <div className="app">
+      <aside className="sidebar">
+        <div className="logo">
+          <div className="logo-icon">✦</div>
+          HabitFlow
+        </div>
+        <div className="nav-section">Menu</div>
+        {nav.map(({id,label,Icon,badge})=>(
+          <button key={id} className={`nav-item${page===id?' active':''}`} onClick={()=>setPage(id)}>
+            <Icon/>{label}
+            {badge&&<span className="badge">{badge}</span>}
+          </button>
+        ))}
+        <div className="sidebar-footer">
+          <div><span className="online-dot"/>SQLite lokal</div>
+          <div>{now.toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}</div>
+        </div>
+      </aside>
+
+      <main className="main">
+        {error&&<div className="err">⚠ {error}</div>}
+
+        {/* ════ OVERVIEW ════ */}
+        {(page==='overview'||page==='daily') && <>
+          <div className="page-header">
+            <div>
+              <div className="page-title">Habit Tracker <span>Report</span></div>
+              <div className="page-sub">{MONTHS_FULL[now.getMonth()]} {now.getFullYear()} · Last updated: {now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}</div>
+            </div>
+            <div className="date-badge">📅 {dateRange}</div>
+          </div>
+
+          {/* Stat cards */}
+          <div className="stats-row">
+            <div className="stat-card" style={{'--accent-line':'#f97316'}}>
+              <div className="stat-icon" style={{background:'rgba(249,115,22,.15)'}}>🔥</div>
+              <div className="stat-label">Current Streak</div>
+              <div className="stat-value">{bestStreak}</div>
+              <div className="stat-sub" style={{color:'var(--accent)'}}>Hari berturut-turut</div>
+            </div>
+            <div className="stat-card" style={{'--accent-line':'var(--green)'}}>
+              <div className="stat-icon" style={{background:'var(--green2)'}}>✅</div>
+              <div className="stat-label">Completion Rate</div>
+              <div className="stat-value">{completionRate}<span style={{fontSize:16}}>%</span></div>
+              <div className="up" style={{fontSize:11,marginTop:4}}>▲ bulan ini</div>
+            </div>
+            <div className="stat-card" style={{'--accent-line':'var(--cyan)'}}>
+              <div className="stat-icon" style={{background:'rgba(6,182,212,.15)'}}>📅</div>
+              <div className="stat-label">Active Days</div>
+              <div className="stat-value">{activeDaysThisMonth}<span style={{fontSize:14,color:'var(--text3)'}}>/{now.getDate()}</span></div>
+              <div className="neutral" style={{fontSize:11,marginTop:4}}>Target: {now.getDate()} hari</div>
+            </div>
+            <div className="stat-card" style={{'--accent-line':'var(--amber)'}}>
+              <div className="stat-icon" style={{background:'var(--amber2)'}}>⭐</div>
+              <div className="stat-label">Best Day</div>
+              <div className="stat-value" style={{fontSize:20}}>{bestDayName}</div>
+              <div className="neutral" style={{fontSize:11,marginTop:4}}>{bestDayPct}% Avg. Completion</div>
+            </div>
+          </div>
+
+          {/* Completion Overview + Heatmap */}
+          <div className="two-col">
+            <div className="card">
+              <div className="card-head"><span className="card-title">Completion Overview</span></div>
+              <div className="donut-wrap">
+                <DonutChart
+                  pct={completionRate}
+                  completed={totalChecksMonth}
+                  missed={Math.max(0,(thisMonthDays.length*totalHabits)-totalChecksMonth-doneToday)}
+                  remaining={doneToday}
+                />
+                <div>
+                  <div className="legend-item"><div className="legend-dot" style={{background:'var(--green)'}}/> Selesai <span className="legend-count">{totalChecksMonth}</span></div>
+                  <div className="legend-item"><div className="legend-dot" style={{background:'var(--red)'}}/> Terlewat <span className="legend-count">{Math.max(0,(thisMonthDays.length*totalHabits)-totalChecksMonth)}</span></div>
+                  <div className="legend-item"><div className="legend-dot" style={{background:'rgba(255,255,255,0.15)'}}/> Sisa <span className="legend-count">{Math.max(0,totalHabits-doneToday)}</span></div>
+                  <div style={{marginTop:12,paddingTop:12,borderTop:'1px solid var(--border)',fontSize:12,color:'var(--text3)'}}>Total Habits <span style={{color:'var(--text)',fontWeight:600,marginLeft:8}}>{totalHabits}</span></div>
+                </div>
+              </div>
+            </div>
+            <div className="card">
+              <div className="card-head"><span className="card-title">Activity Heatmap</span></div>
+              <ActivityHeatmap logs={logs} totalHabits={totalHabits} days={29}/>
+            </div>
+          </div>
+
+          {/* Trend + Performance */}
+          <div className="two-col">
+            <div className="card">
+              <div className="card-head">
+                <span className="card-title">Completion Trend</span>
+                <select className="card-select"><option>Harian</option></select>
+              </div>
+              <LineChart data={trendData} labels={trendLabels} color="#22c55e" height={160}/>
+            </div>
+            <div className="card">
+              <div className="card-head">
+                <span className="card-title">Habit Performance</span>
+                <select className="card-select"><option>Bulan Ini</option></select>
+              </div>
+              {habitPerf.length===0?<div className="empty">Belum ada habit</div>:habitPerf.map(h=>(
+                <div key={h.id} className="perf-item">
+                  <div className="perf-icon">{HABIT_ICONS[habits.indexOf(habits.find(x=>x.id===h.id))%HABIT_ICONS.length]}</div>
+                  <div className="perf-name">{h.name}</div>
+                  <div className="perf-bar-wrap"><div className="perf-bar" style={{width:`${h.pct}%`,background:h.color}}/></div>
+                  <div className="perf-pct">{h.pct}%</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* History Table + Weekly Summary */}
+          <div className="two-col">
+            <div className="card">
+              <div className="card-head"><span className="card-title">Last 30 Days History</span></div>
+              {habits.length===0?<div className="empty">Belum ada habit</div>:(
+                <div style={{overflowX:'auto',maxHeight:280,overflowY:'auto'}}>
+                  <table className="hist-table">
+                    <thead><tr>
+                      <th>Tanggal</th>
+                      {habits.slice(0,5).map(h=><th key={h.id} style={{textAlign:'center'}}>{h.name.slice(0,6)}</th>)}
+                      <th style={{textAlign:'center'}}>Score</th>
+                    </tr></thead>
+                    <tbody>
+                      {histDays.slice(0,10).map(d=>{
+                        const dl=logs[d]||[];
+                        const pct=totalHabits>0?Math.round((dl.length/totalHabits)*100):0;
+                        return(
+                          <tr key={d}>
+                            <td>{new Date(d+'T00:00').toLocaleDateString('id-ID',{day:'numeric',month:'short'})}</td>
+                            {habits.slice(0,5).map(h=>(
+                              <td key={h.id} style={{textAlign:'center'}}>
+                                {dl.includes(h.id)?<div className="cell-check">✅</div>:<div className="cell-x">❌</div>}
+                              </td>
+                            ))}
+                            <td style={{textAlign:'center'}}>
+                              <span className={`score-pill ${pct>=80?'score-high':pct>=50?'score-med':'score-low'}`}>{pct}%</span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+            <div className="card">
+              <div className="card-head"><span className="card-title">Weekly Summary</span></div>
+              {weeks.map((w,i)=>(
+                <div key={i} className="week-row">
+                  <div className="week-label" style={{fontSize:11}}>{w.label}</div>
+                  <div className="week-dates">{w.dateRange}</div>
+                  <div className="week-bar-wrap"><div className="week-bar" style={{width:`${w.pct}%`}}/></div>
+                  <div className="week-pct">{w.pct}%</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Best/Worst + Mood + AI */}
+          <div className="three-col">
+            <div className="card">
+              <div className="card-head"><span className="card-title">Best &amp; Worst Habit</span></div>
+              <div style={{display:'flex',gap:10}}>
+                {bestHabit?<div className="bw-card">
+                  <div className="bw-icon-wrap" style={{background:'rgba(245,158,11,.15)'}}>🏆</div>
+                  <div className="bw-tag" style={{color:'var(--amber)'}}>Best Habit</div>
+                  <div className="bw-name">{bestHabit.name}</div>
+                  <div className="bw-pct" style={{color:'var(--green)'}}>{bestHabit.pct}%</div>
+                  <div className="bw-sub">Completion Rate</div>
+                </div>:<div className="bw-card"><div className="empty" style={{padding:'0.5rem'}}>–</div></div>}
+                {worstHabit&&worstHabit.id!==bestHabit?.id?<div className="bw-card">
+                  <div className="bw-icon-wrap" style={{background:'rgba(239,68,68,.15)'}}>📉</div>
+                  <div className="bw-tag" style={{color:'var(--text3)'}}>Perlu Improve</div>
+                  <div className="bw-name">{worstHabit.name}</div>
+                  <div className="bw-pct" style={{color:'var(--red)'}}>{worstHabit.pct}%</div>
+                  <div className="bw-sub">Completion Rate</div>
+                </div>:<div/>}
+              </div>
+            </div>
+            <div className="card">
+              <div className="card-head"><span className="card-title">Mood Correlation</span></div>
+              <div className="mood-wrap">
+                <MoodDonut good={moodGood} neutral={moodNeutral} bad={moodBad}/>
+                <div className="mood-legend">
+                  <div className="mood-item"><div className="mood-face">😊</div> Baik <span className="mood-pct" style={{color:'var(--green)'}}>{moodGood}%</span></div>
+                  <div className="mood-item"><div className="mood-face">😐</div> Netral <span className="mood-pct" style={{color:'var(--amber)'}}>{moodNeutral}%</span></div>
+                  <div className="mood-item"><div className="mood-face">😔</div> Buruk <span className="mood-pct" style={{color:'var(--red)'}}>{moodBad}%</span></div>
+                </div>
+              </div>
+            </div>
+            <div className="card">
+              <div className="card-head"><span className="card-title">✨ AI Insights</span></div>
+              {insights.map((ins,i)=>(
+                <div key={i} className="insight-item"><div className="insight-dot"/>{ins}</div>
+              ))}
+            </div>
+          </div>
+
+          {/* Monthly Calendar + Yearly */}
+          <div className="two-col">
+            <div className="card">
+              <div className="card-head">
+                <span className="card-title">Monthly Calendar</span>
+                <span className="card-hint">{MONTHS_FULL[now.getMonth()]} {now.getFullYear()}</span>
+              </div>
+              <MonthCalendar logs={logs} habits={habits} year={now.getFullYear()} month={now.getMonth()}/>
+            </div>
+            <div className="card">
+              <div className="card-head"><span className="card-title">Yearly Overview ({now.getFullYear()})</span></div>
+              <YearlyChart data={yearlyDisplay} labels={MONTHS}/>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8,marginTop:12}}>
+                {[
+                  {label:'Avg Completion',val:`${completionRate}%`},
+                  {label:'Total Hari Aktif',val:activeDaysThisMonth},
+                  {label:'Longest Streak',val:`${bestStreak}h`},
+                  {label:'Total Habits',val:totalHabits},
+                ].map(s=>(
+                  <div key={s.label} style={{textAlign:'center'}}>
+                    <div style={{fontSize:16,fontWeight:700,color:'var(--text)'}}>{s.val}</div>
+                    <div style={{fontSize:10,color:'var(--text3)',marginTop:2}}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </>}
+
+        {/* ════ WEEKLY / STATS ════ */}
+        {(page==='weekly'||page==='stats') && <>
+          <div className="page-header">
+            <div><div className="page-title">Statistik <span>Mingguan</span></div><div className="page-sub">Performa habit bulan ini</div></div>
+          </div>
+          <div className="stats-row">
+            {[
+              {label:'Completion Rate',val:`${completionRate}%`,delta:`bulan ini`,cls:'up'},
+              {label:'Active Days',val:activeDaysThisMonth,delta:`dari ${now.getDate()} hari`,cls:'neutral'},
+              {label:'Total Checks',val:totalChecksMonth,delta:'kali selesai',cls:'up'},
+              {label:'Best Streak',val:`${bestStreak}h`,delta:'berturut-turut',cls:'neutral'},
+            ].map(s=>(
+              <div key={s.label} className="stat-card">
+                <div className="stat-label">{s.label}</div>
+                <div className="stat-value">{s.val}</div>
+                <div className={`stat-delta ${s.cls}`}>{s.delta}</div>
+              </div>
+            ))}
+          </div>
+          <div className="card">
+            <div className="card-head"><span className="card-title">Completion Trend (30 Hari)</span></div>
+            <LineChart data={trendData} labels={trendLabels} color="#7c6af7" height={200}/>
+          </div>
+          <div className="card">
+            <div className="card-head"><span className="card-title">Habit Performance</span></div>
+            {habitPerf.map(h=>(
+              <div key={h.id} style={{marginBottom:14}}>
+                <div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:5}}>
+                  <span style={{color:'var(--text)',display:'flex',alignItems:'center',gap:6}}>
+                    <span style={{width:7,height:7,borderRadius:'50%',background:h.color,display:'inline-block'}}/>
+                    {h.name}
+                  </span>
+                  <span style={{color:h.pct>70?'var(--green)':h.pct>40?'var(--amber)':'var(--red)',fontWeight:600}}>{h.pct}%</span>
+                </div>
+                <div style={{height:7,background:'var(--surface2)',borderRadius:4,overflow:'hidden'}}>
+                  <div style={{height:'100%',width:`${h.pct}%`,background:h.color,borderRadius:4,transition:'width .4s'}}/>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>}
+
+        {/* ════ HISTORY ════ */}
+        {page==='history' && <>
+          <div className="page-header">
+            <div><div className="page-title">History <span>Lengkap</span></div><div className="page-sub">Riwayat 30 hari terakhir</div></div>
+          </div>
+          <div className="card">
+            <div className="card-head"><span className="card-title">Heatmap Aktivitas</span><span className="card-hint">42 hari terakhir</span></div>
+            <ActivityHeatmap logs={logs} totalHabits={totalHabits} days={29}/>
+          </div>
+          <div className="card">
+            <div className="card-head"><span className="card-title">Tambah Habit Baru</span></div>
+            <div className="color-row">{COLORS.map(c=><div key={c} className={`color-dot${color===c?' sel':''}`} style={{background:c}} onClick={()=>setColor(c)}/>)}</div>
+            <div className="add-form">
+              <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addHabit()} placeholder="Nama habit baru…"/>
+              <button className="btn btn-primary" onClick={addHabit} disabled={saving}>{saving?<div className="spinner"/>:<IcoPlus/>}</button>
+            </div>
+          </div>
+          <div className="card">
+            <div className="card-head"><span className="card-title">Semua Habit</span><span className="card-hint">{totalHabits} aktif</span></div>
+            {habits.length===0?<div className="empty">Belum ada habit. Tambahkan di atas!</div>
+            :habits.map(h=>{
+              const done=todayLogs.includes(h.id); const streak=getStreak(h.id);
+              return(
+                <div key={h.id} className="habit-row">
+                  <button className={`check-btn${done?' on':''}`} onClick={()=>toggleToday(h.id)} style={done?{}:{borderColor:h.color}}>
+                    {done&&<IcoCheck/>}
+                  </button>
+                  <div style={{width:7,height:7,borderRadius:'50%',background:h.color,flexShrink:0}}/>
+                  <span style={{flex:1,color:done?'var(--text3)':'var(--text)',textDecoration:done?'line-through':'none',fontSize:13}}>{h.name}</span>
+                  {streak>1&&<span className="streak-tag">🔥 {streak}h</span>}
+                  <button className="btn btn-danger btn-sm" onClick={()=>deleteHabit(h.id)}><IcoTrash/></button>
+                </div>
+              );
+            })}
+          </div>
+        </>}
+
+        {/* ════ DAILY (habit tracker) ════ */}
+        {page==='daily' && null /* rendered in overview */}
+
+        {/* ════ EXPORT ════ */}
+        {page==='export' && <ExportPage habits={habits} logs={logs}/>}
+      </main>
+
+      {toast&&<div className="toast">{toast}</div>}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
